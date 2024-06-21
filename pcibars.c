@@ -104,6 +104,7 @@ void print_bar_info(struct pci_dev *dev){
 			bars[i].prefetchable = (reg_val & (1<<3)) > 0;
 
 			if(((reg_val & (3<<1))>>1) == 2){
+				bars[i].type = 3;
 				/* 64 bit BAR */
 				bars[i].addr = bars[i].addr + ( (u64) pci_read_long(dev, PCI_BASE_ADDRESS_0 + 4*i+4) << 32);
 				pci_write_long(dev, PCI_BASE_ADDRESS_0 + 4*i +4, 0xffffffff);
@@ -121,7 +122,6 @@ void print_bar_info(struct pci_dev *dev){
 			}
 			else {
 				/* 32 bit BAR */
-				bars[i].type = 3;
 
 				reg_val &= ~(0xf);			/* Clear frst 4 bits */
 				reg_val= ~(reg_val);			/* Invert value */
