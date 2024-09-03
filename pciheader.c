@@ -20,7 +20,7 @@ struct config_space_bitfield {
 
 /* Prototypes */
 void print_pci_header(struct pci_dev *pdev);
-struct pci_dev * search_device(struct pci_access *pacc, u8 bus, u8 slot, u8 func);
+struct pci_dev * search_device(struct pci_access *pacc, u8 domain, u8 bus, u8 slot, u8 func);
 void int_2_hexstr(u32 value, unsigned int size, char *destination);
 int convert_hexstring(char *hexstring);
 
@@ -122,7 +122,7 @@ void print_pci_header(struct pci_dev *pdev) {
 	header_type = pci_read_byte(pdev, PCI_HEADER_TYPE) & 0x1;
 	ptr = types[header_type];
 
-	printf("Selected device %x:%x:%x is a%s\n", pdev->bus, pdev->dev, pdev->func, ctypes[header_type]);
+	printf("Selected device %x:%x:%x:%x is a%s\n", pdev->domain, pdev->bus, pdev->dev, pdev->func, ctypes[header_type]);
 
 	/* Read config space and dump it to console */
 	printf("|    Byte 0    |   Byte 1     |    Byte 2    |    Byte 3    |\t\t|    Byte 0    |   Byte 1     |    Byte 2    |    Byte 3    |\n");
@@ -177,6 +177,7 @@ void print_pci_header(struct pci_dev *pdev) {
  * @brief searches for a device with a given Bus-, Slot- and Functionnumber
  *
  * @param pacc: PCI Access
+ * @param domain: Domainnumber
  * @param bus: Busnumber
  * @param slot: Slotnumber
  * @param func: Functionnumber
@@ -184,10 +185,11 @@ void print_pci_header(struct pci_dev *pdev) {
  * @return NULL: No device found
  *		   pointer to device
  */
-struct pci_dev * search_device(struct pci_access *pacc, u8 bus, u8 slot, u8 func) {
+struct pci_dev * search_device(struct pci_access *pacc, u8 domain, u8 bus, u8 slot, u8 func) {
 	struct pci_dev *dev;
 	for(dev = pacc->devices; dev != NULL; dev = dev->next){
-		if((dev-> bus == bus) &&
+		if((dev-> domain == domain) &&
+		   (dev-> bus == bus) &&
 		   (dev->dev == slot) &&
 		   (dev->func == func))
 			return dev;
@@ -241,16 +243,17 @@ int main(int argc, char *argv[])
 {
   struct pci_access *pacc;
   struct pci_dev *dev;
-  u8 bus, slot, func;
+  u8 domain, bus, slot, func;
 
   /* Check arguments */
-  if(argc != 4){
-	  printf("Three Arguments must be passed!\n");
-	  printf("Usage: %s [bus] [device] [function]\n", argv[0]);
+  if(argc != 5){
+	  printf("Four Arguments must be passed!\n");
+	  printf("Usage: %s [domain] [bus] [device] [function]\n", argv[0]);
 	  printf("With:\n");
-	  printf("\tbus:\tBusnumber of device to print PCI Header\n");
-	  printf("\tdevice:\tDevicenumber of device to print PCI Header\n");
-	  printf("\tbus:\tFunctionnumber of device to print PCI Header\n");
+	  printf("\tbus:\tDomain number of device to print PCI Header\n");
+	  printf("\tbus:\tBus number of device to print PCI Header\n");
+	  printf("\tdevice:\tDevice number of device to print PCI Header\n");
+	  printf("\tbus:\tFunction number of device to print PCI Header\n");
 	  return -1;
   }
 
@@ -260,15 +263,16 @@ int main(int argc, char *argv[])
   pci_scan_bus(pacc);		/* We want to get the list of devices */
 
   /* Get numbers */ 
-  bus = convert_hexstring(argv[1]);
-  slot = convert_hexstring(argv[2]);
-  func = convert_hexstring(argv[3]);
+  domain = convert_hexstring(argv[1]);
+  bus = convert_hexstring(argv[2]);
+  slot = convert_hexstring(argv[3]);
+  func = convert_hexstring(argv[4]);
 
   /* Check if device with the passed numbers exist */
-  dev = search_device(pacc, bus, slot, func);
+  dev = search_device(pacc, domain, bus, slot, func);
   
   if(dev == NULL) {
-	  printf("No device found with %x:%x:%x\n", bus, slot, func);
+	  printf("No device found with %x:%x:%x:%x\n", domain, bus, slot, func);
 	  return -1;
   }
 
